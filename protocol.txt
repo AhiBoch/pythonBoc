@@ -1,0 +1,97 @@
+protocol
+
+connect:
+
+    client -> Server {send nick to rec}
+               [1]     [msg len]      [len nick]        [nick] 
+        byte   [1]         [2]           [2]          [len nick]
+
+    serv -> client:
+        for connect
+                   [9]     [MSG_len]      [len nick]       [nick]                      [msg]
+            byte   [1]        [2]             [2]          [len nick]          [(len msg) - 2-2-len nick]
+        for disconnect
+                   [8]       [01]             
+            byte   [1]        [2]                      
+
+
+enter to room:
+
+    client -> Server {}
+               [2]     [msg len]      [len nick]        [nick]     [room number]
+        byte   [1]         [2]           [2]          [len nick]        [1]
+    serv -> client:
+        try to enetr
+                   [9]     [MSG_len]      [1/0] 
+            byte   [1]        [2]          [1]   
+        if success to enter :
+                   [1]     [msg len]  [len nick]        [nick]                 [msg - join]
+            byte   [1]       [2]          [2]          [len nick]      [(len msg) - 2-2-len nick]
+        
+exit room:
+
+    client -> Server {}
+               [3]     [msg len]      [len nick]        [nick]    
+        byte   [1]         [2]           [2]          [len nick]  
+    serv -> client: None
+
+create room:
+
+    client -> Server {exm: 4011}
+               [4]     [msg len]      [room num]         
+        byte   [1]         [2]           [1]           
+    serv -> client:
+               [3]     [MSG_len]      [1/0] 
+        byte   [1]        [2]          [1]   
+
+delete room:
+
+    client -> Server {exm: 5031}
+               [5]     [msg len]      [room num]         
+        byte   [1]         [2]           [1]           
+    serv -> client: None    
+
+send msg :
+    client -> Server {opt: menu, goodbye, simple msg }
+        menu:
+            1 - enetr to lobi -->with 0 in end . exm:20803Ahi0
+            2 - create room 
+            3 - delete room
+            4 - enetr room
+            5 - print all room exsit --> all open room exsit
+            6 - print all member in room --> my room detail
+
+        goodbye:
+                   [9]     [msg len]  [len nick]        [nick]               
+            byte   [1]       [2]          [2]          [len nick] 
+
+        simple msg:
+                   [6]     [msg len]  [len nick]        [nick]                [msg]
+            byte   [1]       [2]          [2]          [len nick]      [(len msg) - 2-2-len nick]
+    
+    server -> client {broadcast to otehr client}
+        if msg = exit
+            --> None
+        elif goodbye protocl 
+            --> None
+        else
+                   [1]     [msg len]  [len nick]        [nick]                 [msg]
+            byte   [1]       [2]          [2]          [len nick]      [(len msg) - 2-2-len nick]
+    
+
+my room detail:
+    client -> Server {exm: 70804nick}
+                   [7]     [msg len]       [len nick]        [nick]         
+            byte   [1]         [2]            [2]          [len nick]    
+    serv -> client: {send msg to specifc client}
+                   [4]     [MSG_len]      [list of all nicks in room] 
+            byte   [1]        [2]                   [MSG_len]   
+
+    all open room exsit:
+    client -> Server {exm: 800}
+                   [8]     [00]           
+            byte   [1]      [2]      
+    serv -> client: {send msg to specifc client}
+                   [4]     [MSG_len]      [list of all room] 
+            byte   [1]        [2]               [MSG_len]   
+
